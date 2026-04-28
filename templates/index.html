@@ -1,73 +1,234 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Word Dropdown Translator</title>
+
   <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --border: #d9e0ea;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --primary: #1a73e8;
+      --primary-hover: #1765c1;
+      --warning-bg: #fff8e1;
+      --warning-border: #f4d27a;
+      --shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+      --radius: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: Arial, sans-serif;
-      max-width: 900px;
-      margin: 40px auto;
-      padding: 0 20px;
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
     }
-    .box {
-      border: 1px solid #ccc;
-      padding: 20px;
-      margin-bottom: 25px;
-      border-radius: 8px;
+
+    .page {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 40px 20px;
     }
-    h1, h2 {
-      margin-top: 0;
+
+    .app-shell {
+      width: 100%;
+      max-width: 960px;
     }
-    input[type="file"] {
-      margin: 10px 0;
-      display: block;
+
+    .hero {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 28px 30px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
     }
-    button {
-      padding: 10px 16px;
-      cursor: pointer;
+
+    .logo img {
+      width: 60px;
+      height: 60px;
+      object-fit: contain;
+      border-radius: 10px;
     }
+
+    .hero-text h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      line-height: 1.2;
+    }
+
+    .hero-text p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
     .flash {
-      background: #fff3cd;
-      border: 1px solid #ffe69c;
-      padding: 10px;
+      background: var(--warning-bg);
+      border: 1px solid var(--warning-border);
+      color: #7a5a00;
+      padding: 14px 16px;
+      border-radius: 10px;
       margin-bottom: 20px;
-      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 24px;
+    }
+
+    .card h2 {
+      margin: 0 0 10px;
+      font-size: 20px;
+    }
+
+    .card p {
+      margin: 0 0 20px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    input[type="file"] {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      font-size: 14px;
+    }
+
+    .btn {
+      appearance: none;
+      border: none;
+      border-radius: 10px;
+      background: var(--primary);
+      color: white;
+      padding: 12px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .btn:hover {
+      background: var(--primary-hover);
+    }
+
+    @media (max-width: 760px) {
+      .hero {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
+
 <body>
-  <h1>Word Dropdown Translator</h1>
-  <p>Upload a DOCX to export dropdown list items, or upload a DOCX + translated CSV to produce a translated DOCX.</p>
+  <div class="page">
+    <div class="app-shell">
 
-  {% with messages = get_flashed_messages() %}
-    {% if messages %}
-      {% for message in messages %}
-        <div class="flash">{{ message }}</div>
-      {% endfor %}
-    {% endif %}
-  {% endwith %}
+      <!-- HEADER -->
+      <div class="hero">
+        <div class="logo">
+          <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo">
+        </div>
+        <div class="hero-text">
+          <h1>Word Dropdown Translator</h1>
+          <p>
+            Upload a DOCX to export dropdown list items, or upload a DOCX with a translated CSV
+            to generate a translated DOCX file.
+          </p>
+        </div>
+      </div>
 
-  <div class="box">
-    <h2>1) Export dropdown items to CSV</h2>
-    <form action="/export" method="post" enctype="multipart/form-data">
-      <label>Select DOCX file:</label>
-      <input type="file" name="docx_file" accept=".docx" required>
-      <button type="submit">Export CSV</button>
-    </form>
-  </div>
+      <!-- FLASH MESSAGES -->
+      {% with messages = get_flashed_messages() %}
+        {% if messages %}
+          {% for message in messages %}
+            <div class="flash">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
 
-  <div class="box">
-    <h2>2) Import translated CSV back into DOCX</h2>
-    <form action="/import" method="post" enctype="multipart/form-data">
-      <label>Select original DOCX file:</label>
-      <input type="file" name="docx_file" accept=".docx" required>
+      <!-- MAIN CONTENT -->
+      <div class="grid">
 
-      <label>Select translated CSV file:</label>
-      <input type="file" name="csv_file" accept=".csv" required>
+        <!-- EXPORT -->
+        <div class="card">
+          <h2>Export dropdown items</h2>
+          <p>Extract dropdown values from a Word document and download as CSV.</p>
 
-      <button type="submit">Generate translated DOCX</button>
-    </form>
+          <form action="/export" method="post" enctype="multipart/form-data">
+            <div class="field">
+              <label>Select DOCX file</label>
+              <input type="file" name="docx_file" accept=".docx" required>
+            </div>
+
+            <button class="btn" type="submit">Export CSV</button>
+          </form>
+        </div>
+
+        <!-- IMPORT -->
+        <div class="card">
+          <h2>Import translated CSV</h2>
+          <p>Upload original DOCX + translated CSV to generate translated DOCX.</p>
+
+          <form action="/import" method="post" enctype="multipart/form-data">
+            <div class="field">
+              <label>Select original DOCX file</label>
+              <input type="file" name="docx_file" accept=".docx" required>
+            </div>
+
+            <div class="field">
+              <label>Select translated CSV file</label>
+              <input type="file" name="csv_file" accept=".csv" required>
+            </div>
+
+            <button class="btn" type="submit">Generate translated DOCX</button>
+          </form>
+        </div>
+
+      </div>
+
+    </div>
   </div>
 </body>
 </html>
