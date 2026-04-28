@@ -21,6 +21,9 @@
       --success-bg: #eaf7ee;
       --success-border: #b9e2c2;
       --success-text: #1f6b38;
+      --error-bg: #fdecec;
+      --error-border: #f5b5b5;
+      --error-text: #8a1f1f;
       --drop-bg: #f8fbff;
       --drop-active: #eef5ff;
       --shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
@@ -114,6 +117,12 @@
       background: var(--success-bg);
       border: 1px solid var(--success-border);
       color: var(--success-text);
+    }
+
+    .status.error {
+      background: var(--error-bg);
+      border: 1px solid var(--error-border);
+      color: var(--error-text);
     }
 
     .grid {
@@ -261,10 +270,6 @@
       color: var(--muted);
     }
 
-    .hidden-iframe {
-      display: none;
-    }
-
     .loading-overlay {
       position: fixed;
       inset: 0;
@@ -342,13 +347,13 @@
 
       <div class="hero">
         <div class="logo">
-          <img src="{{ url_for('static', filename='images/LLS.png') }}" alt="Logo">
+          <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo">
         </div>
         <div class="hero-text">
           <h1>Word Dropdown Translator</h1>
           <p>
-            Upload a DOCX to export dropdown list items, or upload 
-            a DOCX + translated CSV to produce a translated DOCX.
+            Upload a DOCX to export dropdown list items, or upload a DOCX + translated CSV
+            to produce a translated DOCX.
           </p>
         </div>
       </div>
@@ -361,7 +366,7 @@
         {% endif %}
       {% endwith %}
 
-      <div id="statusMessage" class="status success"></div>
+      <div id="statusMessage" class="status"></div>
 
       <div class="grid">
         <div class="card">
@@ -373,8 +378,8 @@
             action="/export"
             method="post"
             enctype="multipart/form-data"
-            target="downloadFrame"
             data-success-message="CSV export complete. Your download should begin automatically."
+            data-default-filename="dropdown_items.csv"
           >
             <div class="field">
               <label for="export-docx">Select DOCX file</label>
@@ -413,8 +418,8 @@
             action="/import"
             method="post"
             enctype="multipart/form-data"
-            target="downloadFrame"
             data-success-message="Translated DOCX generated successfully. Your download should begin automatically."
+            data-default-filename="translated_document.docx"
           >
             <div class="field">
               <label for="import-docx">Select original DOCX file</label>
@@ -475,8 +480,6 @@
     </div>
   </div>
 
-  <iframe id="downloadFrame" name="downloadFrame" class="hidden-iframe"></iframe>
-
   <div id="loadingOverlay" class="loading-overlay" aria-hidden="true">
     <div class="loading-box">
       <div class="spinner"></div>
@@ -491,20 +494,16 @@
     (function () {
       const statusMessage = document.getElementById("statusMessage");
       const loadingOverlay = document.getElementById("loadingOverlay");
-      const downloadFrame = document.getElementById("downloadFrame");
 
-      let activeForm = null;
-      let submitFallbackTimer = null;
-
-      function showStatus(message) {
+      function showStatus(message, type) {
         statusMessage.textContent = message;
-        statusMessage.classList.add("show");
+        statusMessage.className = "status show " + type;
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
 
       function clearStatus() {
         statusMessage.textContent = "";
-        statusMessage.classList.remove("show");
+        statusMessage.className = "status";
       }
 
       function showLoading() {
@@ -564,6 +563,81 @@
         });
       }
 
+      function getFilenameFromDisposition(disposition, fallbackName) {
+        if (!disposition) return fallbackName;
+
+        const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+        if (utf8Match && utf8Match[1]) {
+          return decodeURIComponent(utf8Match[1]);
+        }
+
+        const asciiMatch = disposition.match(/filename="?([^"]+)"?/i);
+        if (asciiMatch && asciiMatch[1]) {
+          return asciiMatch[1];
+        }
+
+        return fallbackName;
+      }
+
+      async function submitWithFetch(form) {
+        const submitButton = form.querySelector("button[type='submit']");
+        const successMessage =
+          form.getAttribute("data-success-message") ||
+          "Your file is ready. The download should begin automatically.";
+        const fallbackFilename =
+          form.getAttribute("data-default-filename") || "downloaded_file";
+
+        const formData = new FormData(form);
+
+        clearStatus();
+        showLoading();
+
+        if (submitButton) {
+          submitButton.disabled = true;
+        }
+
+        try {
+          const response = await fetch(form.action, {
+            method: "POST",
+            body: formData
+          });
+
+          if (!response.ok) {
+            let errorText = "Something went wrong while processing the file.";
+            try {
+              errorText = await response.text();
+            } catch (e) {}
+            throw new Error(errorText || "Request failed.");
+          }
+
+          const blob = await response.blob();
+          const disposition = response.headers.get("Content-Disposition");
+          const filename = getFilenameFromDisposition(disposition, fallbackFilename);
+
+          const downloadUrl = window.URL.createObjectURL(blob);
+          const tempLink = document.createElement("a");
+          tempLink.href = downloadUrl;
+          tempLink.download = filename;
+          document.body.appendChild(tempLink);
+          tempLink.click();
+          tempLink.remove();
+
+          window.URL.revokeObjectURL(downloadUrl);
+
+          showStatus(successMessage, "success");
+        } catch (error) {
+          showStatus(
+            error.message || "Processing failed. Please try again.",
+            "error"
+          );
+        } finally {
+          hideLoading();
+          if (submitButton) {
+            submitButton.disabled = false;
+          }
+        }
+      }
+
       document.querySelectorAll(".drop-zone").forEach(bindDropZone);
 
       document.querySelectorAll("[data-browse-for]").forEach((button) => {
@@ -573,38 +647,11 @@
         });
       });
 
-      document.querySelectorAll("form[target='downloadFrame']").forEach((form) => {
-        form.addEventListener("submit", () => {
-          activeForm = form;
-          clearStatus();
-          showLoading();
-
-          if (submitFallbackTimer) {
-            clearTimeout(submitFallbackTimer);
-          }
-
-          submitFallbackTimer = setTimeout(() => {
-            hideLoading();
-          }, 30000);
+      document.querySelectorAll("form").forEach((form) => {
+        form.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          await submitWithFetch(form);
         });
-      });
-
-      downloadFrame.addEventListener("load", () => {
-        if (!activeForm) return;
-
-        hideLoading();
-
-        if (submitFallbackTimer) {
-          clearTimeout(submitFallbackTimer);
-          submitFallbackTimer = null;
-        }
-
-        const successMessage =
-          activeForm.getAttribute("data-success-message") ||
-          "Your file is ready. The download should begin automatically.";
-
-        showStatus(successMessage);
-        activeForm = null;
       });
     })();
   </script>
