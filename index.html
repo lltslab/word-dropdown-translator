@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Word Dropdown Translator</title>
+
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --border: #d9e0ea;
+      --border-strong: #c7d1df;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --primary: #1a73e8;
+      --primary-hover: #1765c1;
+      --warning-bg: #fff8e1;
+      --warning-border: #f4d27a;
+      --warning-text: #7a5a00;
+      --success-bg: #eaf7ee;
+      --success-border: #b9e2c2;
+      --success-text: #1f6b38;
+      --error-bg: #fdecec;
+      --error-border: #f5b5b5;
+      --error-text: #8a1f1f;
+      --drop-bg: #f8fbff;
+      --drop-active: #eef5ff;
+      --shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+      --radius: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .page {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    .app-shell {
+      width: 100%;
+      max-width: 960px;
+    }
+
+    .hero {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 28px 30px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 22px;
+    }
+
+    .logo {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+    }
+
+    .logo img {
+      width: 150px;
+      height: auto;
+      object-fit: contain;
+      display: block;
+    }
+
+    .hero-text h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      line-height: 1.2;
+    }
+
+    .hero-text p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .flash {
+      background: var(--warning-bg);
+      border: 1px solid var(--warning-border);
+      color: var(--warning-text);
+      padding: 14px 16px;
+      margin-bottom: 20px;
+      border-radius: 10px;
+      font-size: 14px;
+    }
+
+    .status {
+      display: none;
+      padding: 14px 16px;
+      margin-bottom: 20px;
+      border-radius: 10px;
+      font-size: 14px;
+    }
+
+    .status.show {
+      display: block;
+    }
+
+    .status.success {
+      background: var(--success-bg);
+      border: 1px solid var(--success-border);
+      color: var(--success-text);
+    }
+
+    .status.error {
+      background: var(--error-bg);
+      border: 1px solid var(--error-border);
+      color: var(--error-text);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 24px;
+    }
+
+    .card h2 {
+      margin-top: 0;
+      margin-bottom: 10px;
+      font-size: 20px;
+    }
+
+    .card p {
+      margin: 0 0 20px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .drop-zone {
+      border: 2px dashed var(--border-strong);
+      border-radius: 12px;
+      background: var(--drop-bg);
+      padding: 18px;
+      transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    }
+
+    .drop-zone.dragover {
+      background: var(--drop-active);
+      border-color: var(--primary);
+      transform: translateY(-1px);
+    }
+
+    .drop-zone-content {
+      text-align: center;
+    }
+
+    .drop-zone-title {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .drop-zone-subtitle {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .drop-zone-actions {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .browse-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-radius: 999px;
+      background: var(--primary);
+      color: #fff;
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .browse-btn:hover {
+      background: var(--primary-hover);
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .file-meta {
+      min-height: 18px;
+      font-size: 13px;
+      color: var(--muted);
+      word-break: break-word;
+    }
+
+    .file-meta.has-file {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .btn {
+      appearance: none;
+      border: none;
+      border-radius: 10px;
+      background: var(--primary);
+      color: white;
+      padding: 12px 18px;
+      font-size: 14px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.2s ease, opacity 0.2s ease;
+    }
+
+    .btn:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .footer {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-top: 22px;
+      padding: 16px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(2px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 20px;
+    }
+
+    .loading-overlay.show {
+      display: flex;
+    }
+
+    .loading-box {
+      width: 100%;
+      max-width: 360px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      text-align: center;
+      padding: 28px 22px;
+    }
+
+    .spinner {
+      width: 44px;
+      height: 44px;
+      border: 4px solid #dbe7fb;
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      margin: 0 auto 16px;
+      animation: spin 0.9s linear infinite;
+    }
+
+    .loading-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .loading-text {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (max-width: 760px) {
+      .hero {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .logo img {
+        width: 130px;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="app-shell">
+
+      <div class="hero">
+        <div class="logo">
+          <img src="{{ url_for('static', filename='images/LLS.png') }}" alt="Logo">
+        </div>
+        <div class="hero-text">
+          <h1>Word Dropdown Translator</h1>
+          <p>
+            Upload a DOCX to export dropdown list items, or upload a DOCX + translated CSV
+            to produce a translated DOCX.
+          </p>
+        </div>
+      </div>
+
+      {% with messages = get_flashed_messages() %}
+        {% if messages %}
+          {% for message in messages %}
+            <div class="flash">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <div id="statusMessage" class="status"></div>
+
+      <div class="grid">
+        <div class="card">
+          <h2>1) Export dropdown items to CSV</h2>
+          <p>Upload a DOCX file to extract dropdown values and export them as a CSV.</p>
+
+          <form
+            id="exportForm"
+            action="/export"
+            method="post"
+            enctype="multipart/form-data"
+            data-success-message="CSV export complete. Your download should begin automatically."
+            data-default-filename="dropdown_items.csv"
+          >
+            <div class="field">
+              <label for="export-docx">Select DOCX file</label>
+
+              <div class="drop-zone" data-input-id="export-docx">
+                <div class="drop-zone-content">
+                  <div class="drop-zone-title">Drag and drop your DOCX here</div>
+                  <div class="drop-zone-subtitle">or choose a file manually</div>
+                  <div class="drop-zone-actions">
+                    <button type="button" class="browse-btn" data-browse-for="export-docx">Choose File</button>
+                  </div>
+                  <div id="export-docx-meta" class="file-meta">No file selected.</div>
+                </div>
+
+                <input
+                  id="export-docx"
+                  class="file-input"
+                  type="file"
+                  name="docx_file"
+                  accept=".docx"
+                  required
+                >
+              </div>
+            </div>
+
+            <button class="btn" type="submit">Export CSV</button>
+          </form>
+        </div>
+
+        <div class="card">
+          <h2>2) Import translated CSV back into DOCX</h2>
+          <p>Upload the original DOCX and translated CSV to generate a translated DOCX.</p>
+
+          <form
+            id="importForm"
+            action="/import"
+            method="post"
+            enctype="multipart/form-data"
+            data-success-message="Translated DOCX generated successfully. Your download should begin automatically."
+            data-default-filename="translated_document.docx"
+          >
+            <div class="field">
+              <label for="import-docx">Select original DOCX file</label>
+
+              <div class="drop-zone" data-input-id="import-docx">
+                <div class="drop-zone-content">
+                  <div class="drop-zone-title">Drag and drop the original DOCX here</div>
+                  <div class="drop-zone-subtitle">or choose a file manually</div>
+                  <div class="drop-zone-actions">
+                    <button type="button" class="browse-btn" data-browse-for="import-docx">Choose File</button>
+                  </div>
+                  <div id="import-docx-meta" class="file-meta">No file selected.</div>
+                </div>
+
+                <input
+                  id="import-docx"
+                  class="file-input"
+                  type="file"
+                  name="docx_file"
+                  accept=".docx"
+                  required
+                >
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="import-csv">Select translated CSV file</label>
+
+              <div class="drop-zone" data-input-id="import-csv">
+                <div class="drop-zone-content">
+                  <div class="drop-zone-title">Drag and drop the translated CSV here</div>
+                  <div class="drop-zone-subtitle">or choose a file manually</div>
+                  <div class="drop-zone-actions">
+                    <button type="button" class="browse-btn" data-browse-for="import-csv">Choose File</button>
+                  </div>
+                  <div id="import-csv-meta" class="file-meta">No file selected.</div>
+                </div>
+
+                <input
+                  id="import-csv"
+                  class="file-input"
+                  type="file"
+                  name="csv_file"
+                  accept=".csv"
+                  required
+                >
+              </div>
+            </div>
+
+            <button class="btn" type="submit">Generate translated DOCX</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="footer">
+        © 2026 LanguageLine Solutions. This tool is intended for internal use only.
+      </div>
+    </div>
+  </div>
+
+  <div id="loadingOverlay" class="loading-overlay" aria-hidden="true">
+    <div class="loading-box">
+      <div class="spinner"></div>
+      <div class="loading-title">Processing your file</div>
+      <div class="loading-text">
+        Please wait while your document is being prepared.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const statusMessage = document.getElementById("statusMessage");
+      const loadingOverlay = document.getElementById("loadingOverlay");
+
+      function showStatus(message, type) {
+        statusMessage.textContent = message;
+        statusMessage.className = "status show " + type;
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      function clearStatus() {
+        statusMessage.textContent = "";
+        statusMessage.className = "status";
+      }
+
+      function showLoading() {
+        loadingOverlay.classList.add("show");
+        loadingOverlay.setAttribute("aria-hidden", "false");
+      }
+
+      function hideLoading() {
+        loadingOverlay.classList.remove("show");
+        loadingOverlay.setAttribute("aria-hidden", "true");
+      }
+
+      function setFileMeta(input) {
+        const meta = document.getElementById(input.id + "-meta");
+        if (!meta) return;
+
+        if (input.files && input.files.length > 0) {
+          meta.textContent = input.files[0].name;
+          meta.classList.add("has-file");
+        } else {
+          meta.textContent = "No file selected.";
+          meta.classList.remove("has-file");
+        }
+      }
+
+      function bindDropZone(zone) {
+        const inputId = zone.getAttribute("data-input-id");
+        const input = document.getElementById(inputId);
+        if (!input) return;
+
+        ["dragenter", "dragover"].forEach((eventName) => {
+          zone.addEventListener(eventName, (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            zone.classList.add("dragover");
+          });
+        });
+
+        ["dragleave", "dragend", "drop"].forEach((eventName) => {
+          zone.addEventListener(eventName, (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            zone.classList.remove("dragover");
+          });
+        });
+
+        zone.addEventListener("drop", (event) => {
+          const dt = event.dataTransfer;
+          if (!dt || !dt.files || !dt.files.length) return;
+          input.files = dt.files;
+          setFileMeta(input);
+        });
+
+        input.addEventListener("change", () => {
+          setFileMeta(input);
+          clearStatus();
+        });
+      }
+
+      function getFilenameFromDisposition(disposition, fallbackName) {
+        if (!disposition) return fallbackName;
+
+        const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+        if (utf8Match && utf8Match[1]) {
+          return decodeURIComponent(utf8Match[1]);
+        }
+
+        const asciiMatch = disposition.match(/filename="?([^"]+)"?/i);
+        if (asciiMatch && asciiMatch[1]) {
+          return asciiMatch[1];
+        }
+
+        return fallbackName;
+      }
+
+      async function submitWithFetch(form) {
+        const submitButton = form.querySelector("button[type='submit']");
+        const successMessage =
+          form.getAttribute("data-success-message") ||
+          "Your file is ready. The download should begin automatically.";
+        const fallbackFilename =
+          form.getAttribute("data-default-filename") || "downloaded_file";
+
+        const formData = new FormData(form);
+
+        clearStatus();
+        showLoading();
+
+        if (submitButton) {
+          submitButton.disabled = true;
+        }
+
+        try {
+          const response = await fetch(form.action, {
+            method: "POST",
+            body: formData
+          });
+
+          if (!response.ok) {
+            let errorText = "Something went wrong while processing the file.";
+            try {
+              errorText = await response.text();
+            } catch (e) {}
+            throw new Error(errorText || "Request failed.");
+          }
+
+          const blob = await response.blob();
+          const disposition = response.headers.get("Content-Disposition");
+          const filename = getFilenameFromDisposition(disposition, fallbackFilename);
+
+          const downloadUrl = window.URL.createObjectURL(blob);
+          const tempLink = document.createElement("a");
+          tempLink.href = downloadUrl;
+          tempLink.download = filename;
+          document.body.appendChild(tempLink);
+          tempLink.click();
+          tempLink.remove();
+
+          window.URL.revokeObjectURL(downloadUrl);
+
+          showStatus(successMessage, "success");
+        } catch (error) {
+          showStatus(
+            error.message || "Processing failed. Please try again.",
+            "error"
+          );
+        } finally {
+          hideLoading();
+          if (submitButton) {
+            submitButton.disabled = false;
+          }
+        }
+      }
+
+      document.querySelectorAll(".drop-zone").forEach(bindDropZone);
+
+      document.querySelectorAll("[data-browse-for]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const input = document.getElementById(button.getAttribute("data-browse-for"));
+          if (input) input.click();
+        });
+      });
+
+      document.querySelectorAll("form").forEach((form) => {
+        form.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          await submitWithFetch(form);
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
